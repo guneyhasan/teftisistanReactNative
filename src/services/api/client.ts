@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL, TOKEN_KEY, REFRESH_TOKEN_KEY, CSRF_TOKEN_KEY } from '@src/configs/constants';
+import { API_BASE_URL, TOKEN_KEY, REFRESH_TOKEN_KEY, CSRF_TOKEN_KEY, TENANT_API_URL_KEY } from '@src/configs/constants';
 
 const STATE_CHANGING_METHODS = ['post', 'put', 'patch', 'delete'];
 
@@ -28,6 +28,11 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  const tenantApiUrl = await SecureStore.getItemAsync(TENANT_API_URL_KEY);
+  if (tenantApiUrl) {
+    config.baseURL = tenantApiUrl;
+  }
+
   const token = await SecureStore.getItemAsync(TOKEN_KEY);
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -41,11 +46,12 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
   return config;
 });
 
-async function fetchAndStoreAuthenticatedCsrf(): Promise<string | null> {
+async function fetchAndStoreAuthenticatedCsrf(originalConfig?: InternalAxiosRequestConfig): Promise<string | null> {
   const token = await SecureStore.getItemAsync(TOKEN_KEY);
   if (!token) return null;
   try {
-    const { data } = await axios.get<{ csrfToken: string }>(`${API_BASE_URL}/auth/csrf-token`, {
+    const baseUrl = originalConfig?.baseURL || API_BASE_URL;
+    const { data } = await axios.get<{ csrfToken: string }>(`${baseUrl}/auth/csrf-token`, {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     });
     await SecureStore.setItemAsync(CSRF_TOKEN_KEY, data.csrfToken);
@@ -116,7 +122,7 @@ apiClient.interceptors.response.use(
       const msg = (error.response?.data as { error?: string })?.error || '';
       if (msg.includes('CSRF')) {
         originalRequest._csrfRetry = true;
-        const newCsrf = await fetchAndStoreAuthenticatedCsrf();
+        const newCsrf = await fetchAndStoreAuthenticatedCsrf(originalRequest);
         if (newCsrf && originalRequest.headers) {
           originalRequest.headers['X-CSRF-Token'] = newCsrf;
           return apiClient(originalRequest);

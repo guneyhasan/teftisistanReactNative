@@ -1,3 +1,6 @@
+export const MASTER_API_URL = 'http://78.135.85.65:4336';
+
+// Fallback url if tenant discovery fails or defaults.
 export const API_BASE_URL = __DEV__
   ? 'http://192.168.1.35:3636'
   : 'https://your-production-url.com';
@@ -7,6 +10,7 @@ export const REFRESH_TOKEN_KEY = 'refresh_token';
 export const USER_KEY = 'user_data';
 export const CSRF_TOKEN_KEY = 'csrf_token';
 export const THEME_STORAGE_KEY = 'theme_preference';
+export const TENANT_API_URL_KEY = 'tenant_api_url';
 
 export const ANSWER_VALUES = {
   U: { label: 'Uygun', short: 'U', color: '#22c55e' },

@@ -12,18 +12,17 @@ import { LoginFormErrors } from '../types';
 
 const LoginForm = () => {
   const { colors } = useTheme();
+  const [firmaKodu, setFirmaKodu] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
-
-  useEffect(() => {
-    authService.getLoginCsrfToken().catch(() => {});
-  }, []);
+  const setTenantApiUrl = useAuthStore((s) => s.setTenantApiUrl);
 
   const validate = (): boolean => {
     const newErrors: LoginFormErrors = {};
+    if (!firmaKodu.trim()) newErrors.firmaKodu = 'Firma kodu gerekli';
     if (!email.trim()) newErrors.email = 'E-posta gerekli';
     else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Geçersiz e-posta';
     if (!password) newErrors.password = 'Şifre gerekli';
@@ -36,6 +35,14 @@ const LoginForm = () => {
     setLoading(true);
     setErrors({});
     try {
+      const tenantUrl = await authService.getTenantUrl(firmaKodu.trim());
+      if (!tenantUrl) {
+        setErrors({ general: 'Firma kodu geçersiz veya sunucuya ulaşılamadı.' });
+        setLoading(false);
+        return;
+      }
+      await setTenantApiUrl(tenantUrl);
+
       await authService.getLoginCsrfToken();
       const response = await authService.login(email.trim(), password);
       const token = response.token || response.accessToken || '';
@@ -81,6 +88,7 @@ const LoginForm = () => {
                 key={user.email}
                 style={[styles.testUserChip, { backgroundColor: colors.surfaceVariant }]}
                 onPress={() => {
+                  setFirmaKodu('testfirma');
                   setEmail(user.email);
                   setPassword(user.password);
                   setErrors({});
@@ -105,6 +113,16 @@ const LoginForm = () => {
               <Text style={[styles.errorText, { color: colors.danger }]}>{errors.general}</Text>
             </View>
           )}
+
+          <Input
+            label="Firma Kodu"
+            placeholder="Firma kodunuzu girin"
+            value={firmaKodu}
+            onChangeText={setFirmaKodu}
+            error={errors.firmaKodu}
+            autoCapitalize="none"
+            leftIcon={<Ionicons name="business-outline" size={18} color={colors.textSecondary} />}
+          />
 
           <Input
             label="E-posta"

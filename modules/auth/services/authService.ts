@@ -1,7 +1,7 @@
 import axios from 'axios';
 import apiClient from '@src/services/api/client';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL, CSRF_TOKEN_KEY } from '@src/configs/constants';
+import { API_BASE_URL, CSRF_TOKEN_KEY, MASTER_API_URL, TENANT_API_URL_KEY } from '@src/configs/constants';
 import { User } from '@src/types';
 
 interface LoginResponse {
@@ -12,6 +12,17 @@ interface LoginResponse {
 }
 
 export const authService = {
+  async getTenantUrl(firmaKodu: string): Promise<string | null> {
+    try {
+      const { data } = await axios.get<{ apiUrl: string }>(`${MASTER_API_URL}/api/tenant-discovery`, {
+        params: { code: firmaKodu },
+      });
+      return data.apiUrl;
+    } catch {
+      return null;
+    }
+  },
+
   async login(email: string, password: string): Promise<LoginResponse> {
     const { data } = await apiClient.post<LoginResponse>('/auth/login', {
       email,
@@ -37,7 +48,9 @@ export const authService = {
 
   /** Fetch loginOnly CSRF token (anonymous) - for login screen before auth */
   async getLoginCsrfToken(): Promise<string> {
-    const { data } = await axios.get<{ csrfToken: string }>(`${API_BASE_URL}/auth/csrf-token`, {
+    const tenantUrl = await SecureStore.getItemAsync(TENANT_API_URL_KEY);
+    const baseUrl = tenantUrl || API_BASE_URL;
+    const { data } = await axios.get<{ csrfToken: string }>(`${baseUrl}/auth/csrf-token`, {
       headers: { 'Content-Type': 'application/json' },
     });
     await SecureStore.setItemAsync(CSRF_TOKEN_KEY, data.csrfToken);
