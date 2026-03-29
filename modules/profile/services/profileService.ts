@@ -1,5 +1,11 @@
 import apiClient from '@src/services/api/client';
-import { API_BASE_URL } from '@src/configs/constants';
+import * as SecureStore from 'expo-secure-store';
+import { API_BASE_URL, TENANT_API_URL_KEY } from '@src/configs/constants';
+
+async function getBaseUrl(): Promise<string> {
+  const tenantUrl = await SecureStore.getItemAsync(TENANT_API_URL_KEY);
+  return (tenantUrl || API_BASE_URL).replace(/\/$/, '');
+}
 
 export const profileService = {
   async uploadPhoto(uri: string): Promise<{ url: string }> {
@@ -12,7 +18,7 @@ export const profileService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
-    const baseUrl = API_BASE_URL.replace(/\/$/, '');
+    const baseUrl = await getBaseUrl();
     const fullUrl = data.url.startsWith('/') ? `${baseUrl}${data.url}` : `${baseUrl}/${data.url}`;
 
     await apiClient.put('/profile', { profilePhoto: fullUrl });

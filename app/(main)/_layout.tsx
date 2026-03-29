@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { AuthImage } from '@src/components';
 import { Drawer } from 'expo-router/drawer';
 import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
@@ -66,7 +67,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       <View style={drawerStyles.userSection}>
         <View style={drawerStyles.avatar}>
           {user?.profilePhoto ? (
-            <Image source={{ uri: user.profilePhoto }} style={styles.avatarImage} />
+            <AuthImage url={user.profilePhoto} style={styles.avatarImage} resizeMode="cover" />
           ) : (
             <Text style={styles.avatarText}>
               {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
