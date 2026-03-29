@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  Image,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -116,7 +115,7 @@ const ProfileScreen = () => {
       <Card variant="elevated" style={styles.profileCard}>
         <TouchableOpacity style={styles.avatarSection} onPress={handlePickPhoto}>
           {user?.profilePhoto ? (
-            <Image source={{ uri: user.profilePhoto }} style={styles.avatar} />
+            <AuthImage url={user.profilePhoto} style={styles.avatar} resizeMode="cover" />
           ) : (
             <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
               <Ionicons name="person" size={40} color={colors.white} />
