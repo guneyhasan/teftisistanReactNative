@@ -39,7 +39,6 @@ const AuditAnswerScreen = () => {
   const auditId = id ?? '';
 
   const [loading, setLoading] = useState(true);
-  const [isReadOnly, setIsReadOnly] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -103,13 +102,18 @@ const AuditAnswerScreen = () => {
         auditService.getBranches(),
       ]);
 
+      // Guard: only assigned auditor with editable status stays on this screen
+      const isAssignedAuditor = detail.audit.userId === user?.id;
+      const isEditableStatus = ['draft', 'pending', 'revision_requested'].includes(detail.audit.status);
+
+      if (!isAssignedAuditor || !isEditableStatus) {
+        router.replace(`/(main)/audits/${auditId}/review` as any);
+        return;
+      }
+
       setCategories(cats);
       setBranches(branchList);
       setSelectedBranch(detail.audit.branchId);
-
-      // Determine if current user is the assigned auditor
-      const assignedToCurrentUser = detail.audit.userId === user?.id;
-      setIsReadOnly(!assignedToCurrentUser);
 
       const displayTitle =
         detail.audit.title ||
@@ -118,7 +122,7 @@ const AuditAnswerScreen = () => {
         'Denetim';
       setAuditHeaderTitle(displayTitle);
 
-      if (detail.audit.status === 'pending' && assignedToCurrentUser) {
+      if (detail.audit.status === 'pending') {
         await auditService.startAudit(auditId);
       }
 
@@ -148,7 +152,7 @@ const AuditAnswerScreen = () => {
       if (detail.audit.authorizedPerson) setAuthorizedPerson(detail.audit.authorizedPerson);
       setRevisionNote(detail.audit.revisionNote || null);
 
-      if (user?.signatureUrl && !detail.audit.auditorSignatureUrl && assignedToCurrentUser) {
+      if (user?.signatureUrl && !detail.audit.auditorSignatureUrl) {
         try {
           const { url } = await auditService.useProfileSignature(auditId);
           setAuditorSignatureUrl(url);
@@ -308,12 +312,10 @@ const AuditAnswerScreen = () => {
             <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
           </View>
         </View>
-        {!isReadOnly && (
-          <View style={styles.topActions}>
+        <View style={styles.topActions}>
             {saving && <ActivityIndicator size="small" color={colors.primary} />}
             <Button title="Kaydet" variant="outline" size="sm" onPress={() => handleSave(false)} />
           </View>
-        )}
       </View>
 
       <ScrollView
@@ -340,14 +342,6 @@ const AuditAnswerScreen = () => {
           </View>
         )}
 
-        {isReadOnly && (
-          <View style={[styles.readOnlyBanner, { backgroundColor: colors.surfaceVariant, borderColor: colors.borderLight }]}>
-            <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
-            <Text style={[styles.readOnlyText, { color: colors.textSecondary }]}>
-              Bu denetim size atanmamış. Sadece görüntüleme modundasınız.
-            </Text>
-          </View>
-        )}
 
         <View style={[styles.tabBar, { backgroundColor: colors.surfaceVariant }]}>
           <TouchableOpacity
@@ -385,7 +379,7 @@ const AuditAnswerScreen = () => {
               onNoteChange={handleNoteChange}
               onPhotoPress={handlePhotoPress}
               onPhotoView={handlePhotoView}
-              readonly={isReadOnly}
+              readonly={false}
             />
           ))
         ) : (
@@ -418,7 +412,7 @@ const AuditAnswerScreen = () => {
                   onPhotoPress={handlePhotoPress}
                   onPhotoView={handlePhotoView}
                   defaultExpanded
-                  readonly={isReadOnly}
+                  readonly={false}
                 />
               ) : null;
             })()}
@@ -430,7 +424,7 @@ const AuditAnswerScreen = () => {
           value={authorizedPerson}
           onChangeText={setAuthorizedPerson}
           containerStyle={styles.authorizedPersonInput}
-          editable={!isReadOnly}
+          editable
         />
 
         <View style={styles.signatureSection}>
@@ -438,8 +432,7 @@ const AuditAnswerScreen = () => {
           <View style={styles.signatureRow}>
             <TouchableOpacity
               style={[styles.signatureBox, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
-              onPress={isReadOnly ? undefined : () => { setSignatureType('auditor'); setShowSignature(true); }}
-              disabled={isReadOnly}
+              onPress={() => { setSignatureType('auditor'); setShowSignature(true); }}
             >
               {auditorSignatureUrl ? (
                 <AuthImage url={auditorSignatureUrl} style={styles.signaturePreview} resizeMode="contain" />
@@ -451,8 +444,7 @@ const AuditAnswerScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.signatureBox, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
-              onPress={isReadOnly ? undefined : () => { setSignatureType('client'); setShowSignature(true); }}
-              disabled={isReadOnly}
+              onPress={() => { setSignatureType('client'); setShowSignature(true); }}
             >
               {clientSignatureUrl ? (
                 <AuthImage url={clientSignatureUrl} style={styles.signaturePreview} resizeMode="contain" />
@@ -465,17 +457,15 @@ const AuditAnswerScreen = () => {
           </View>
         </View>
 
-        {!isReadOnly && (
-          <Button
-            title="Denetimi Gönder"
-            onPress={handleSubmit}
-            loading={submitting}
-            fullWidth
-            size="lg"
-            style={styles.submitBtn}
-            disabled={!auditorSignatureUrl || !clientSignatureUrl || !authorizedPerson?.trim()}
-          />
-        )}
+        <Button
+          title="Denetimi Gönder"
+          onPress={handleSubmit}
+          loading={submitting}
+          fullWidth
+          size="lg"
+          style={styles.submitBtn}
+          disabled={!auditorSignatureUrl || !clientSignatureUrl || !authorizedPerson?.trim()}
+        />
       </ScrollView>
 
       <SignatureCanvas

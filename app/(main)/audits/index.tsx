@@ -14,7 +14,7 @@ import { useRefresh } from '@src/hooks/useRefresh';
 
 const AuditListScreen = () => {
   const { colors } = useTheme();
-  const { hasRole } = useAuthStore();
+  const { hasRole, user } = useAuthStore();
   const {
     audits,
     companies,
@@ -42,13 +42,14 @@ const AuditListScreen = () => {
   );
 
   const handleAuditPress = useCallback((audit: Audit) => {
+    const isAssignedAuditor = audit.userId === user?.id;
     const isEditableStatus = ['draft', 'pending', 'revision_requested'].includes(audit.status);
-    if (isEditableStatus) {
+    if (isAssignedAuditor && isEditableStatus) {
       router.push(`/(main)/audits/${audit.id}/answer`);
     } else {
       router.push(`/(main)/audits/${audit.id}/review`);
     }
-  }, []);
+  }, [user?.id]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
