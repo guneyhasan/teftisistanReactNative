@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { AuthImage } from '@src/components';
 import { Drawer } from 'expo-router/drawer';
 import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
@@ -12,6 +12,8 @@ import { useTheme } from '@src/contexts/ThemeContext';
 import { MENU_ITEMS, USER_ROLES } from '@src/configs/constants';
 import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@src/configs/theme';
 import { authService } from '@modules/auth/services/authService';
+import { companyService } from '@modules/companies/services/companyService';
+import { Company } from '@src/types';
 
 const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
   home: 'home-outline',
@@ -27,6 +29,22 @@ const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { user, logout, hasRole } = useAuthStore();
   const { colors } = useTheme();
+  const [companiesExpanded, setCompaniesExpanded] = useState(false);
+  const [expandedCompanyId, setExpandedCompanyId] = useState<number | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+
+  const isAdmin = hasRole('admin');
+
+  useEffect(() => {
+    if (isAdmin && companiesExpanded && companies.length === 0) {
+      setLoadingCompanies(true);
+      companyService.getAll()
+        .then(setCompanies)
+        .catch(() => {})
+        .finally(() => setLoadingCompanies(false));
+    }
+  }, [companiesExpanded, isAdmin]);
 
   const filteredMenuItems = MENU_ITEMS.filter((item) =>
     item.roles.some((role) => hasRole(role)),
@@ -84,6 +102,92 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       <View style={styles.menuSection}>
         {filteredMenuItems.map((item) => {
           const iconName = ICON_MAP[item.icon] || 'ellipse-outline';
+          const isCompanies = item.key === 'companies';
+
+          if (isCompanies) {
+            return (
+              <View key={item.key}>
+                {/* Şirketler satırı: sol kısım sayfaya gider, sağ chevron listeyi açar/kapar */}
+                <View style={styles.menuItemRow}>
+                  <TouchableOpacity
+                    style={styles.menuItemMain}
+                    onPress={() => router.push(item.route as never)}
+                  >
+                    <Ionicons name={iconName} size={22} color={colors.textSecondary} />
+                    <Text style={drawerStyles.menuLabel}>{item.label}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.chevronBtn}
+                    onPress={() => setCompaniesExpanded((prev) => !prev)}
+                  >
+                    <Ionicons
+                      name={companiesExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Şirket alt listesi */}
+                {companiesExpanded && (
+                  <View style={styles.subList}>
+                    {loadingCompanies ? (
+                      <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
+                    ) : companies.length === 0 ? (
+                      <Text style={[styles.emptySubText, { color: colors.textSecondary }]}>Şirket bulunamadı</Text>
+                    ) : (
+                      companies.map((company) => (
+                        <View key={company.id}>
+                          {/* Şirket başlığı */}
+                          <TouchableOpacity
+                            style={[styles.companyRow, { borderLeftColor: colors.primary }]}
+                            onPress={() =>
+                              setExpandedCompanyId((prev) => (prev === company.id ? null : company.id))
+                            }
+                          >
+                            <Ionicons name="business-outline" size={16} color={colors.primary} />
+                            <Text style={[styles.companyLabel, { color: colors.text }]} numberOfLines={1}>
+                              {company.name}
+                            </Text>
+                            <Ionicons
+                              name={expandedCompanyId === company.id ? 'chevron-up' : 'chevron-down'}
+                              size={14}
+                              color={colors.textSecondary}
+                            />
+                          </TouchableOpacity>
+
+                          {/* Bölgeler & Şubeler */}
+                          {expandedCompanyId === company.id && (
+                            <View style={styles.subSubList}>
+                              <TouchableOpacity
+                                style={styles.subSubItem}
+                                onPress={() =>
+                                  router.push(`/(main)/admin/regions?companyId=${company.id}` as never)
+                                }
+                              >
+                                <Ionicons name="map-outline" size={15} color={colors.textSecondary} />
+                                <Text style={[styles.subSubLabel, { color: colors.textSecondary }]}>Bölgeler</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.subSubItem}
+                                onPress={() =>
+                                  router.push(`/(main)/admin/branches?companyId=${company.id}` as never)
+                                }
+                              >
+                                <Ionicons name="storefront-outline" size={15} color={colors.textSecondary} />
+                                <Text style={[styles.subSubLabel, { color: colors.textSecondary }]}>Şubeler</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      ))
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          }
+
           return (
             <TouchableOpacity
               key={item.key}
@@ -171,7 +275,7 @@ const styles = StyleSheet.create({
   },
   userSection: {
     alignItems: 'center',
-    paddingTop: SPACING.xl + 57, // ~1.5cm extra offset
+    paddingTop: SPACING.xl + 57,
     paddingBottom: SPACING.xl,
     paddingHorizontal: SPACING.lg,
     borderBottomWidth: 1,
@@ -220,6 +324,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     marginBottom: 2,
+  },
+  menuItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: 2,
+    overflow: 'hidden',
+  },
+  menuItemMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+  },
+  chevronBtn: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+  },
+  subList: {
+    marginLeft: SPACING.lg,
+    marginBottom: SPACING.xs,
+  },
+  companyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderLeftWidth: 2,
+    marginBottom: 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  companyLabel: {
+    flex: 1,
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '600',
+  },
+  subSubList: {
+    marginLeft: SPACING.lg,
+    marginBottom: SPACING.xs,
+  },
+  subSubItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: 6,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  subSubLabel: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '500',
+  },
+  emptySubText: {
+    fontSize: FONT_SIZE.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   menuLabel: {
     fontSize: FONT_SIZE.md,

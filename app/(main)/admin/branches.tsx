@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, FlatList, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import { Button, Modal, Input, Select, ConfirmDialog, EmptyState, SearchBar, Badge } from '@src/components';
 import { SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '@src/configs/theme';
 import { useTheme } from '@src/contexts/ThemeContext';
@@ -10,6 +11,7 @@ import { useRefresh } from '@src/hooks/useRefresh';
 
 const BranchesScreen = () => {
   const { colors } = useTheme();
+  const params = useLocalSearchParams<{ companyId?: string }>();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -17,7 +19,9 @@ const BranchesScreen = () => {
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
-  const [filterCompany, setFilterCompany] = useState<number | null>(null);
+  const [filterCompany, setFilterCompany] = useState<number | null>(
+    params.companyId ? parseInt(params.companyId, 10) : null
+  );
   const [filterRegion, setFilterRegion] = useState<number | null>(null);
   const [filterCity, setFilterCity] = useState<string | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);

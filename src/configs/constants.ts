@@ -52,8 +52,6 @@ export const MENU_ITEMS = [
   { key: 'audits', label: 'Denetimler', icon: 'clipboard-list', route: '/(main)/audits', roles: ['admin', 'field', 'planlamacı', 'gözden_geçiren', 'firma_sahibi', 'sube_kullanici'] },
   { key: 'reports', label: 'Raporlar', icon: 'chart-bar', route: '/(main)/reports', roles: ['admin', 'planlamacı', 'gözden_geçiren', 'firma_sahibi'] },
   { key: 'companies', label: 'Şirketler', icon: 'building', route: '/(main)/admin/companies', roles: ['admin'] },
-  { key: 'regions', label: 'Bölgeler', icon: 'map', route: '/(main)/admin/regions', roles: ['admin'] },
-  { key: 'branches', label: 'Şubeler', icon: 'store', route: '/(main)/admin/branches', roles: ['admin'] },
   { key: 'categories', label: 'Kategoriler', icon: 'tag', route: '/(main)/admin/categories', roles: ['admin', 'planlamacı'] },
   { key: 'users', label: 'Kullanıcılar', icon: 'users', route: '/(main)/admin/users', roles: ['admin'] },
 ] as const;

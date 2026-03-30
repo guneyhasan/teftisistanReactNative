@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, FlatList, Text, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import { Button, Modal, Input, Select, ConfirmDialog, EmptyState } from '@src/components';
 import { SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '@src/configs/theme';
 import { useTheme } from '@src/contexts/ThemeContext';
@@ -10,6 +11,7 @@ import { useRefresh } from '@src/hooks/useRefresh';
 
 const RegionsScreen = () => {
   const { colors } = useTheme();
+  const params = useLocalSearchParams<{ companyId?: string }>();
   const [regions, setRegions] = useState<Region[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,9 @@ const RegionsScreen = () => {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [companyId, setCompanyId] = useState<number | null>(null);
-  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(null);
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
+    params.companyId ? parseInt(params.companyId, 10) : null
+  );
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
