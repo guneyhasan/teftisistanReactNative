@@ -16,6 +16,7 @@ interface QuestionCardProps {
   onPhotoPress: (questionId: number) => void;
   onPhotoView?: (photo: Photo) => void;
   photos: Photo[];
+  readonly?: boolean;
 }
 
 const ANSWER_BUTTONS: Array<{ key: AnswerValue; label: string; color: string }> = [
@@ -36,6 +37,7 @@ const QuestionCard = ({
   onPhotoPress,
   onPhotoView,
   photos,
+  readonly = false,
 }: QuestionCardProps) => {
   const { colors } = useTheme();
   const showNoteInput = currentValue === 'UD' || question.noteRequired;
@@ -61,8 +63,10 @@ const QuestionCard = ({
                 styles.answerBtn,
                 { borderColor: btn.color },
                 isActive && { backgroundColor: btn.color },
+                readonly && { opacity: readonly && !isActive ? 0.4 : 1 },
               ]}
-              onPress={() => onValueChange(question.id, btn.key)}
+              onPress={readonly ? undefined : () => onValueChange(question.id, btn.key)}
+              disabled={readonly}
             >
               <Text style={[styles.answerText, { color: colors.text }, isActive && { color: colors.white }]}>
                 {btn.label}
@@ -74,22 +78,37 @@ const QuestionCard = ({
 
       {showNoteInput && (
         <TextInput
-          style={[styles.noteInput, { borderColor: colors.border, color: colors.text }]}
+          style={[
+            styles.noteInput,
+            { borderColor: colors.border, color: colors.text },
+            readonly && { opacity: 0.6 },
+          ]}
           placeholder="Not ekleyin..."
           placeholderTextColor={colors.textTertiary}
           value={currentNote}
           onChangeText={(text) => onNoteChange(question.id, text)}
           multiline
           numberOfLines={2}
+          editable={!readonly}
         />
       )}
 
-      <TouchableOpacity style={styles.photoBtn} onPress={() => onPhotoPress(question.id)}>
-        <Ionicons name="camera-outline" size={18} color={colors.primary} />
-        <Text style={[styles.photoBtnText, { color: colors.primary }]}>
-          Fotoğraf {photos.length > 0 ? `(${photos.length})` : 'Ekle'}
-        </Text>
-      </TouchableOpacity>
+      {!readonly && (
+        <TouchableOpacity style={styles.photoBtn} onPress={() => onPhotoPress(question.id)}>
+          <Ionicons name="camera-outline" size={18} color={colors.primary} />
+          <Text style={[styles.photoBtnText, { color: colors.primary }]}>
+            Fotoğraf {photos.length > 0 ? `(${photos.length})` : 'Ekle'}
+          </Text>
+        </TouchableOpacity>
+      )}
+      {readonly && photos.length > 0 && (
+        <View style={styles.photoBtn}>
+          <Ionicons name="camera-outline" size={18} color={colors.textSecondary} />
+          <Text style={[styles.photoBtnText, { color: colors.textSecondary }]}>
+            Fotoğraflar ({photos.length})
+          </Text>
+        </View>
+      )}
 
       {photos.length > 0 && (
         <ScrollView

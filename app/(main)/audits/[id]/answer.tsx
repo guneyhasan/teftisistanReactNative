@@ -39,6 +39,7 @@ const AuditAnswerScreen = () => {
   const auditId = id ?? '';
 
   const [loading, setLoading] = useState(true);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -106,6 +107,10 @@ const AuditAnswerScreen = () => {
       setBranches(branchList);
       setSelectedBranch(detail.audit.branchId);
 
+      // Determine if current user is the assigned auditor
+      const assignedToCurrentUser = detail.audit.userId === user?.id;
+      setIsReadOnly(!assignedToCurrentUser);
+
       const displayTitle =
         detail.audit.title ||
         detail.audit.branch?.name ||
@@ -113,7 +118,7 @@ const AuditAnswerScreen = () => {
         'Denetim';
       setAuditHeaderTitle(displayTitle);
 
-      if (detail.audit.status === 'pending') {
+      if (detail.audit.status === 'pending' && assignedToCurrentUser) {
         await auditService.startAudit(auditId);
       }
 
@@ -143,7 +148,7 @@ const AuditAnswerScreen = () => {
       if (detail.audit.authorizedPerson) setAuthorizedPerson(detail.audit.authorizedPerson);
       setRevisionNote(detail.audit.revisionNote || null);
 
-      if (user?.signatureUrl && !detail.audit.auditorSignatureUrl) {
+      if (user?.signatureUrl && !detail.audit.auditorSignatureUrl && assignedToCurrentUser) {
         try {
           const { url } = await auditService.useProfileSignature(auditId);
           setAuditorSignatureUrl(url);
@@ -303,10 +308,12 @@ const AuditAnswerScreen = () => {
             <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
           </View>
         </View>
-        <View style={styles.topActions}>
-          {saving && <ActivityIndicator size="small" color={colors.primary} />}
-          <Button title="Kaydet" variant="outline" size="sm" onPress={() => handleSave(false)} />
-        </View>
+        {!isReadOnly && (
+          <View style={styles.topActions}>
+            {saving && <ActivityIndicator size="small" color={colors.primary} />}
+            <Button title="Kaydet" variant="outline" size="sm" onPress={() => handleSave(false)} />
+          </View>
+        )}
       </View>
 
       <ScrollView
@@ -330,6 +337,15 @@ const AuditAnswerScreen = () => {
               <Text style={[styles.revisionNoteTitle, { color: colors.text }]}>Revizyon Notu</Text>
               <Text style={[styles.revisionNoteText, { color: colors.textSecondary }]}>{revisionNote}</Text>
             </View>
+          </View>
+        )}
+
+        {isReadOnly && (
+          <View style={[styles.readOnlyBanner, { backgroundColor: colors.surfaceVariant, borderColor: colors.borderLight }]}>
+            <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.readOnlyText, { color: colors.textSecondary }]}>
+              Bu denetim size atanmamış. Sadece görüntüleme modundasınız.
+            </Text>
           </View>
         )}
 
@@ -369,6 +385,7 @@ const AuditAnswerScreen = () => {
               onNoteChange={handleNoteChange}
               onPhotoPress={handlePhotoPress}
               onPhotoView={handlePhotoView}
+              readonly={isReadOnly}
             />
           ))
         ) : (
@@ -401,6 +418,7 @@ const AuditAnswerScreen = () => {
                   onPhotoPress={handlePhotoPress}
                   onPhotoView={handlePhotoView}
                   defaultExpanded
+                  readonly={isReadOnly}
                 />
               ) : null;
             })()}
@@ -412,7 +430,7 @@ const AuditAnswerScreen = () => {
           value={authorizedPerson}
           onChangeText={setAuthorizedPerson}
           containerStyle={styles.authorizedPersonInput}
-          editable
+          editable={!isReadOnly}
         />
 
         <View style={styles.signatureSection}>
@@ -420,7 +438,8 @@ const AuditAnswerScreen = () => {
           <View style={styles.signatureRow}>
             <TouchableOpacity
               style={[styles.signatureBox, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
-              onPress={() => { setSignatureType('auditor'); setShowSignature(true); }}
+              onPress={isReadOnly ? undefined : () => { setSignatureType('auditor'); setShowSignature(true); }}
+              disabled={isReadOnly}
             >
               {auditorSignatureUrl ? (
                 <AuthImage url={auditorSignatureUrl} style={styles.signaturePreview} resizeMode="contain" />
@@ -432,7 +451,8 @@ const AuditAnswerScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.signatureBox, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
-              onPress={() => { setSignatureType('client'); setShowSignature(true); }}
+              onPress={isReadOnly ? undefined : () => { setSignatureType('client'); setShowSignature(true); }}
+              disabled={isReadOnly}
             >
               {clientSignatureUrl ? (
                 <AuthImage url={clientSignatureUrl} style={styles.signaturePreview} resizeMode="contain" />
@@ -445,15 +465,17 @@ const AuditAnswerScreen = () => {
           </View>
         </View>
 
-        <Button
-          title="Denetimi Gönder"
-          onPress={handleSubmit}
-          loading={submitting}
-          fullWidth
-          size="lg"
-          style={styles.submitBtn}
-          disabled={!auditorSignatureUrl || !clientSignatureUrl || !authorizedPerson?.trim()}
-        />
+        {!isReadOnly && (
+          <Button
+            title="Denetimi Gönder"
+            onPress={handleSubmit}
+            loading={submitting}
+            fullWidth
+            size="lg"
+            style={styles.submitBtn}
+            disabled={!auditorSignatureUrl || !clientSignatureUrl || !authorizedPerson?.trim()}
+          />
+        )}
       </ScrollView>
 
       <SignatureCanvas
@@ -541,6 +563,19 @@ const styles = StyleSheet.create({
   signatureLabel: { fontSize: FONT_SIZE.sm, textAlign: 'center' },
   signaturePreview: { width: 80, height: 40, marginBottom: SPACING.xs },
   submitBtn: { marginTop: SPACING.xl },
+  readOnlyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    marginBottom: SPACING.lg,
+  },
+  readOnlyText: {
+    fontSize: FONT_SIZE.sm,
+    flex: 1,
+  },
 });
 
 export default AuditAnswerScreen;

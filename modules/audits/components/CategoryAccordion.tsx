@@ -19,6 +19,7 @@ interface CategoryAccordionProps {
   onPhotoPress: (questionId: number) => void;
   onPhotoView?: (photo: Photo) => void;
   defaultExpanded?: boolean;
+  readonly?: boolean;
 }
 
 const CategoryAccordion = ({
@@ -30,6 +31,7 @@ const CategoryAccordion = ({
   onPhotoPress,
   onPhotoView,
   defaultExpanded = false,
+  readonly = false,
 }: CategoryAccordionProps) => {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -67,6 +69,7 @@ const CategoryAccordion = ({
               onPhotoPress={onPhotoPress}
               onPhotoView={onPhotoView}
               photos={photosByQuestion[question.id] || []}
+              readonly={readonly}
             />
           ))}
         </View>
