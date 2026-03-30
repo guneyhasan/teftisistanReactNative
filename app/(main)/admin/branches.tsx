@@ -19,12 +19,16 @@ const BranchesScreen = () => {
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
-  const [filterCompany, setFilterCompany] = useState<number | null>(
-    params.companyId ? parseInt(params.companyId, 10) : null
-  );
+  const [filterCompany, setFilterCompany] = useState<number | null>(null);
   const [filterRegion, setFilterRegion] = useState<number | null>(null);
   const [filterCity, setFilterCity] = useState<string | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // params.companyId değişince filtreyi güncelle (farklı şirketten gelinince)
+  useEffect(() => {
+    setFilterCompany(params.companyId ? parseInt(params.companyId, 10) : null);
+    setFilterRegion(null);
+  }, [params.companyId]);
 
   const [formName, setFormName] = useState('');
   const [formCity, setFormCity] = useState('');

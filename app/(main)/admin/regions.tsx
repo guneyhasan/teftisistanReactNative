@@ -19,11 +19,14 @@ const RegionsScreen = () => {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [companyId, setCompanyId] = useState<number | null>(null);
-  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
-    params.companyId ? parseInt(params.companyId, 10) : null
-  );
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // params.companyId değişince filtreyi güncelle (farklı şirketten gelinince)
+  useEffect(() => {
+    setFilterCompanyId(params.companyId ? parseInt(params.companyId, 10) : null);
+  }, [params.companyId]);
 
   const fetchData = useCallback(async () => {
     try {
