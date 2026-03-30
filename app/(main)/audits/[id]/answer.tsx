@@ -243,12 +243,12 @@ const AuditAnswerScreen = () => {
     }
 
     if (!auditorSignatureUrl || !clientSignatureUrl) {
-      Alert.alert('Uyarı', 'Her iki imza da gerekli. Denetçi ve karşı taraf imzalarını atınız.');
+      Alert.alert('Uyarı', 'Her iki imza da gerekli. Denetçi ve şube yetkilisi imzalarını atınız.');
       return;
     }
 
     if (!authorizedPerson?.trim()) {
-      Alert.alert('Uyarı', 'Karşı taraf adı soyadı zorunludur.');
+      Alert.alert('Uyarı', 'Şube yetkilisi adı soyadı zorunludur.');
       return;
     }
 
@@ -408,7 +408,7 @@ const AuditAnswerScreen = () => {
         )}
 
         <Input
-          label="Karşı Taraf Adı Soyadı"
+          label="Şube Yetkilisi Adı Soyadı"
           value={authorizedPerson}
           onChangeText={setAuthorizedPerson}
           containerStyle={styles.authorizedPersonInput}
@@ -439,7 +439,7 @@ const AuditAnswerScreen = () => {
               ) : (
                 <Ionicons name="create-outline" size={24} color={colors.textTertiary} />
               )}
-              <Text style={[styles.signatureLabel, { color: colors.textSecondary }]}>Karşı Taraf İmzası</Text>
+              <Text style={[styles.signatureLabel, { color: colors.textSecondary }]}>Şube Yetkilisi İmzası</Text>
               {clientSignatureUrl && <Ionicons name="checkmark-circle" size={16} color={colors.success} />}
             </TouchableOpacity>
           </View>
@@ -460,7 +460,7 @@ const AuditAnswerScreen = () => {
         visible={showSignature}
         onClose={() => setShowSignature(false)}
         onSave={handleSignatureSave}
-        title={signatureType === 'auditor' ? 'Denetçi İmzası' : 'Karşı Taraf İmzası'}
+        title={signatureType === 'auditor' ? 'Denetçi İmzası' : 'Şube Yetkilisi İmzası'}
         saving={signatureSaving}
       />
 

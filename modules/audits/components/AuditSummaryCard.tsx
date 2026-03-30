@@ -74,7 +74,7 @@ const AuditSummaryCard = ({ audit, score }: AuditSummaryCardProps) => {
             )}
           </View>
           <View style={[styles.signatureBox, { backgroundColor: colors.surfaceVariant, borderColor: colors.borderLight }]}>
-            <Text style={[styles.signatureLabel, { color: colors.textSecondary }]}>Karşı Taraf</Text>
+            <Text style={[styles.signatureLabel, { color: colors.textSecondary }]}>Şube Yetkilisi</Text>
             {audit.clientSignatureUrl ? (
               <AuthImage url={audit.clientSignatureUrl} style={styles.signatureImage} resizeMode="contain" />
             ) : (
